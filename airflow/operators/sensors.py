@@ -38,11 +38,13 @@ class BaseSensorOperator(BaseOperator):
             poke_interval=60,
             timeout=60*60*24*7,
             soft_fail=False,
+            lazy_start=True,
             *args, **kwargs):
         super(BaseSensorOperator, self).__init__(*args, **kwargs)
         self.poke_interval = poke_interval
         self.soft_fail = soft_fail
         self.timeout = timeout
+        self.lazy_start = lazy_start
 
     def poke(self, context):
         '''
@@ -50,6 +52,9 @@ class BaseSensorOperator(BaseOperator):
         override.
         '''
         raise AirflowException('Override me.')
+
+    def is_ready(self, context):
+        return (not self.lazy_start) or self.poke(context)
 
     def execute(self, context):
         started_at = datetime.now()

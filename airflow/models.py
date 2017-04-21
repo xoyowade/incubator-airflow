@@ -677,6 +677,7 @@ class TaskInstance(Base):
         self.unixname = getpass.getuser()
         if state:
             self.state = state
+        self.context = None
 
     def command(
             self,
@@ -873,6 +874,21 @@ class TaskInstance(Base):
                 self.are_dependencies_met(
                     ignore_depends_on_past=ignore_depends_on_past,
                     flag_upstream_failed=flag_upstream_failed)):
+            # is the task ready to run? (for lazy start tasks)
+            if hasattr(self.task, 'is_ready'):
+                try:
+                    with timeout(2):
+                        is_ready = self.task.is_ready(self.prepare_context_and_rendor())
+                        logging.info('Is task {}.{} ready: {}'.format(
+                            self.dag_id, self.task_id, is_ready))
+                        return is_ready
+                    # start normally when timeout
+                    return True
+                except Exception as e:
+                    logging.exception(error)
+                    # start normally when exception
+                    return True
+
             return True
         # anything else
         else:
@@ -1408,6 +1424,13 @@ class TaskInstance(Base):
             if content:
                 rendered_content = rt(attr, content, jinja_context)
                 setattr(task, attr, rendered_content)
+
+    def prepare_context_and_rendor(self):
+        if self.context:
+            return self.context
+        self.context = self.get_template_context()
+        self.render_templates()
+        return self.context
 
     def email_alert(self, exception, is_retry=False):
         task = self.task
