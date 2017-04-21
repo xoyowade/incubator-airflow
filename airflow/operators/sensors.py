@@ -13,7 +13,7 @@ from airflow.models import BaseOperator, TaskInstance, Connection as DB
 from airflow.hooks import BaseHook
 from airflow.utils.state import State
 from airflow.utils.decorators import apply_defaults
-
+from sqlalchemy import func
 
 class BaseSensorOperator(BaseOperator):
     '''
@@ -205,7 +205,7 @@ class ExternalTaskSensor(BaseSensorOperator):
             TI.dag_id == self.external_dag_id,
             TI.task_id == self.external_task_id,
             TI.state.in_(self.allowed_states),
-            TI.execution_date == dttm,
+            func.date(TI.execution_date) == dttm.strftime('%Y-%m-%d')
         ).count()
         session.commit()
         session.close()
