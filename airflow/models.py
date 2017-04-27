@@ -885,7 +885,7 @@ class TaskInstance(Base):
                     # start normally when timeout
                     return True
                 except Exception as e:
-                    logging.exception(error)
+                    logging.exception(e)
                     # start normally when exception
                     return True
 
