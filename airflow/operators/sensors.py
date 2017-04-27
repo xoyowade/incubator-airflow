@@ -39,12 +39,14 @@ class BaseSensorOperator(BaseOperator):
             timeout=60*60*24*7,
             soft_fail=False,
             lazy_start=True,
+            lazy_start_timeout=60*60*24,
             *args, **kwargs):
         super(BaseSensorOperator, self).__init__(*args, **kwargs)
         self.poke_interval = poke_interval
         self.soft_fail = soft_fail
         self.timeout = timeout
         self.lazy_start = lazy_start
+        self.lazy_start_timeout = lazy_start_timeout
 
     def poke(self, context):
         '''
@@ -54,7 +56,12 @@ class BaseSensorOperator(BaseOperator):
         raise AirflowException('Override me.')
 
     def is_ready(self, context):
-        return (not self.lazy_start) or self.poke(context)
+        ready = (not self.lazy_start) or self.poke(context)
+        if not ready:
+            # We schedule timeout task to let them show on the running list
+            target_dttm = dag.following_schedule(context['execution_date'])
+            ready = (datetime.now() - target_dttm).seconds > self.lazy_start_timeout
+        return ready
 
     def execute(self, context):
         started_at = datetime.now()
