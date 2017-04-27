@@ -59,7 +59,7 @@ class BaseSensorOperator(BaseOperator):
         ready = (not self.lazy_start) or self.poke(context)
         if not ready:
             # We schedule timeout task to let them show on the running list
-            target_dttm = dag.following_schedule(context['execution_date'])
+            target_dttm = self.dag.following_schedule(context['execution_date'])
             ready = (datetime.now() - target_dttm).seconds > self.lazy_start_timeout
         return ready
 
