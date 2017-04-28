@@ -1,4 +1,5 @@
 from datetime import datetime
+import logging
 
 from airflow.operators.sensors import BaseSensorOperator
 from airflow.utils.decorators import apply_defaults
@@ -15,7 +16,8 @@ class ScheduleTimeDeltaSensor(BaseSensorOperator):
 
     @apply_defaults
     def __init__(self, delta, *args, **kwargs):
-        super(ScheduleTimeDeltaSensor, self).__init__(*args, **kwargs)
+        super(ScheduleTimeDeltaSensor, self).__init__(*args,
+                poke_interval=delta.seconds, **kwargs)
         self.delta = delta
         self.target_dttm = None
 
@@ -24,7 +26,8 @@ class ScheduleTimeDeltaSensor(BaseSensorOperator):
         if not self.target_dttm:
             self.target_dttm = now + self.delta
             return False
-        logging.info('Checking if the time ({0}) has come'.format(target_dttm))
+
         return now > self.target_dttm
 
-
+    def is_ready(self, context):
+        return True
