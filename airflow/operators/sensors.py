@@ -442,9 +442,15 @@ class TimeSensor(BaseSensorOperator):
         self.target_time = target_time
 
     def poke(self, context):
+        dag = context['dag']
+        target_dttm = dag.following_schedule(context['execution_date']).replace(
+                hour=self.target_time.hour,
+                minute=self.target_time.minute,
+                second=self.target_time.second,
+        )
         logging.info(
-            'Checking if the time ({0}) has come'.format(self.target_time))
-        return datetime.now().time() > self.target_time
+            'Checking if the time ({0}) has come'.format(target_dttm))
+        return datetime.now() > target_dttm
 
 
 class TimeDeltaSensor(BaseSensorOperator):
